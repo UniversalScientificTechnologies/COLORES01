@@ -2,16 +2,17 @@
 #include <Stepper.h>
 #include <Wire.h>
 
-#define address 0x44 // A0 = L (I2C address)
+#define light0 0x44 // A0 = L (I2C light0)
+#define light1 0x45 // A0 = H (I2C light0)
 
 const int steps = 200; //3200;  // change this to fit the number of steps
-
+const int sspeed = 100; // stepper motor speed
 
 // initialize the stepper library on pins 
 Stepper myStepper(steps, 9,10,11,12);           
 
 // DS18S20 Temperature chip 
-OneWire  ds(1);  // 1-Wire
+OneWire  ds(5);  // 1-Wire
 byte addr[8];    // Addres
 
 void setup() 
@@ -21,11 +22,8 @@ void setup()
 
   // initialize the serial port:
   Serial.begin(9600);
-
-  // set the speed 
-  myStepper.setSpeed(8);
   
-  Wire.begin(); // join i2c bus (address optional for master)
+  Wire.begin(); // join i2c bus (light0 optional for master)
 
   // search for DS
   if ( !ds.search(addr)) 
@@ -69,7 +67,12 @@ void loop()
     digitalWrite(13, LOW); // blik
     // step one revolution  in one direction:
     Serial.println("clockwise");
-    myStepper.step(steps);
+    myStepper.setSpeed(sspeed/2);
+    myStepper.step(30);
+    myStepper.setSpeed(sspeed);
+    myStepper.step(steps-50);
+    myStepper.setSpeed(sspeed/2);
+    myStepper.step(20);
     delay(50);
     digitalWrite(9, LOW);
     digitalWrite(10, LOW);
@@ -83,7 +86,12 @@ void loop()
     digitalWrite(13, HIGH);  // blik
      // step one revolution in the other direction:
     Serial.println("counterclockwise");
-    myStepper.step(-steps);
+    myStepper.setSpeed(sspeed/2);
+    myStepper.step(-30);
+    myStepper.setSpeed(sspeed);
+    myStepper.step(-(steps-50));
+    myStepper.setSpeed(sspeed/2);
+    myStepper.step(-20);
     delay(50);
     digitalWrite(9, LOW);
     digitalWrite(10, LOW);
@@ -97,7 +105,13 @@ void loop()
   ds.reset();
   ds.select(addr);
   ds.write(0x44,1);         // start conversion
-  delay(1000);     // maybe 750ms is enough, maybe not  
+
+  // Delay for measurement, maybe 750ms is enough, maybe not 
+  digitalWrite(13, HIGH);   // set the LED on
+  delay(500);
+  digitalWrite(13, LOW);    // set the LED off
+  delay(500);
+
   present = ds.reset();
   ds.select(addr);    
   ds.write(0xBE);         // Read Scratchpad
@@ -116,57 +130,107 @@ void loop()
   Serial.println();            
 
   Serial.print("Light0: COMMAND=");
-
   // Setup device
-  Wire.beginTransmission(address); 
-  Wire.send(0x00);            // sends address
+  Wire.beginTransmission(light0); 
+  Wire.send(0x00);            // sends light0
   Wire.send(0b11000001);      // setup (eye light sensing; measurement range 2 [4000 lx])
   Wire.endTransmission();     // stop transmitting
 
   // Delay for measurement
   digitalWrite(13, HIGH);   // set the LED on
-  delay(500);
+  delay(55);
   digitalWrite(13, LOW);    // set the LED off
-  delay(500);
+  delay(55);
 
-
-  //  Connect to device and set register address
-  Wire.beginTransmission(address); 
-  Wire.send(0x00);            // sends address
+  //  Connect to device and set register light0
+  Wire.beginTransmission(light0); 
+  Wire.send(0x00);            // sends light0
   Wire.endTransmission();     // stop transmitting
   //  Connect to device and request one byte
-  Wire.beginTransmission(address);
-  Wire.requestFrom(address, 1);
+  Wire.beginTransmission(light0);
+  Wire.requestFrom(light0, 1);
   dd = Wire.receive();
   Wire.endTransmission();     // stop transmitting
   Serial.print(dd, HEX);
 
   Serial.print(" LSB=");
-  //  Connect to device and set register address
-  Wire.beginTransmission(address); 
-  Wire.send(0x01);            // sends address
+  //  Connect to device and set register light0
+  Wire.beginTransmission(light0); 
+  Wire.send(0x01);            // sends light0
   Wire.endTransmission();     // stop transmitting
   //  Connect to device and request one byte
-  Wire.beginTransmission(address);
-  Wire.requestFrom(address, 1);
+  Wire.beginTransmission(light0);
+  Wire.requestFrom(light0, 1);
   dd = Wire.receive();
   Wire.endTransmission();     // stop transmitting
   Serial.print(dd, HEX);
 
   Serial.print(" MSB=");  
-  //  Connect to device and set register address
-  Wire.beginTransmission(address);
-  Wire.send(0x02);            // sends address
+  //  Connect to device and set register light0
+  Wire.beginTransmission(light0);
+  Wire.send(0x02);            // sends light0
   Wire.endTransmission();     // stop transmitting
   //  Connect to device and request one byte
-  Wire.beginTransmission(address);
-  Wire.requestFrom(address, 1);
+  Wire.beginTransmission(light0);
+  Wire.requestFrom(light0, 1);
+  dd = Wire.receive();
+  Wire.endTransmission();     // stop transmitting
+  Serial.println(dd, HEX);
+
+  Serial.print("Light1: COMMAND=");
+  // Setup device
+  Wire.beginTransmission(light1); 
+  Wire.send(0x00);            // sends light0
+  Wire.send(0b11000001);      // setup (eye light sensing; measurement range 2 [4000 lx])
+  Wire.endTransmission();     // stop transmitting
+
+  // Delay for measurement
+  digitalWrite(13, HIGH);   // set the LED on
+  delay(55);
+  digitalWrite(13, LOW);    // set the LED off
+  delay(55);
+
+  //  Connect to device and set register light0
+  Wire.beginTransmission(light1); 
+  Wire.send(0x00);            // sends light0
+  Wire.endTransmission();     // stop transmitting
+  //  Connect to device and request one byte
+  Wire.beginTransmission(light1);
+  Wire.requestFrom(light1, 1);
   dd = Wire.receive();
   Wire.endTransmission();     // stop transmitting
   Serial.print(dd, HEX);
 
-  Serial.print("\n");
+  Serial.print(" LSB=");
+  //  Connect to device and set register light0
+  Wire.beginTransmission(light1); 
+  Wire.send(0x01);            // sends light0
+  Wire.endTransmission();     // stop transmitting
+  //  Connect to device and request one byte
+  Wire.beginTransmission(light1);
+  Wire.requestFrom(light1, 1);
+  dd = Wire.receive();
+  Wire.endTransmission();     // stop transmitting
+  Serial.print(dd, HEX);
 
+  Serial.print(" MSB=");  
+  //  Connect to device and set register light0
+  Wire.beginTransmission(light1);
+  Wire.send(0x02);            // sends light0
+  Wire.endTransmission();     // stop transmitting
+  //  Connect to device and request one byte
+  Wire.beginTransmission(light1);
+  Wire.requestFrom(light1, 1);
+  dd = Wire.receive();
+  Wire.endTransmission();     // stop transmitting
+  Serial.println(dd, HEX);
+
+  Serial.print("X=");
+  Serial.print(analogRead(A0), HEX);
+  Serial.print(" Y=");
+  Serial.print(analogRead(A1), HEX);
+  Serial.print(" Z=");
+  Serial.println(analogRead(A2), HEX);
 }
 
 
