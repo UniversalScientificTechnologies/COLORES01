@@ -24,21 +24,6 @@ void setup()
   Serial.begin(9600);
   
   Wire.begin(); // join i2c bus (light0 optional for master)
-
-  // search for DS
-  if ( !ds.search(addr)) 
-  {
-    ds.reset_search();
-    delay(250);
-    return;
-  }
-
-  if ( OneWire::crc8( addr, 7) != addr[7]) 
-  {
-      Serial.print("CRC is not valid!\n");
-      return;
-  }
-
 }
 
 
@@ -62,6 +47,7 @@ void loop()
     Serial.println();
   }
   
+  //--------------------------------------------------------- Motor
   if(sense)
   {
     digitalWrite(13, LOW); // blik
@@ -101,7 +87,22 @@ void loop()
     sense=1;
   }
   
-  // 1-Wire bus
+  //--------------------------------------------------------- 1-Wire bus
+
+  // search for DS
+  if ( !ds.search(addr)) 
+  {
+    ds.reset_search();
+    delay(250);
+    return;
+  }
+
+  if ( OneWire::crc8( addr, 7) != addr[7]) 
+  {
+      Serial.print("CRC is not valid!\n");
+      return;
+  }
+ 
   ds.reset();
   ds.select(addr);
   ds.write(0x44,1);         // start conversion
@@ -226,11 +227,11 @@ void loop()
   Serial.println(dd, HEX);
 
   Serial.print("X=");
-  Serial.print(analogRead(A0), HEX);
+  Serial.print(analogRead(A0)-512, DEC);
   Serial.print(" Y=");
-  Serial.print(analogRead(A1), HEX);
+  Serial.print(analogRead(A1)-512, DEC);
   Serial.print(" Z=");
-  Serial.println(analogRead(A2), HEX);
+  Serial.println(analogRead(A2)-512, DEC);
 }
 
 
