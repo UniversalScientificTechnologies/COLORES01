@@ -3,7 +3,7 @@
 #include <Wire.h>
 
 #define light0 0x44 // A0 = L (I2C light0)
-#define light1 0x45 // A0 = H (I2C light0)
+#define light1 0x45 // A0 = H (I2C light1)
 
 #define LAMP1 13  // Callibration Lamp 1
 #define LAMP2  6  // Callibration Lamp 2
@@ -22,9 +22,10 @@ const int sspeed = 100; // stepper motor speed
 Stepper myStepper(steps, M1,M2,M3,M4);           
 
 // DS18S20 Temperature chip 
-OneWire  ds(5);  // 1-Wire
-byte addr[8];    // Addres
-boolean sense;
+OneWire  ds(5);  // 1-Wire pin
+
+byte addr[8];    // 1-Wire Address
+boolean sense;   // Sense of revolution
 
 void setup() 
 {
@@ -39,17 +40,17 @@ void setup()
   // initialize the serial port:
   Serial.begin(9600);
   
-  Wire.begin(); // join i2c bus (light0 optional for master)
+  Wire.begin(); // join i2c bus 
 }
 
 
 void loop() 
 {
-  byte i,n;
-  byte present = 0;
-  byte data[12];
-  byte inByte;
-  int dd=0;
+  byte i,n; // for fors
+  byte present = 0; // for 1-Wire
+  byte data[12]; // data from temperature
+  byte inByte;  // RS232 data
+  int dd=0;  // data from light
     
   digitalWrite(LAMP1, HIGH); // All outputs OFF
   digitalWrite(LAMP2, HIGH); 
@@ -65,7 +66,7 @@ void loop()
   {
     // get incoming byte:
     inByte = Serial.read();
-    Serial.print("Prijat znak: ");
+    Serial.print("Incoming char: ");
     Serial.print( inByte, HEX);
     Serial.println();
   }
@@ -73,7 +74,7 @@ void loop()
   //--------------------------------------------------------- Motor
   if (sense)
   {
-    // step one revolution  in one direction:
+    // one revolution in one direction
     Serial.println("clockwise");
     myStepper.setSpeed(sspeed/2);
     myStepper.step(30);
@@ -89,7 +90,7 @@ void loop()
   }
   else
   {      
-     // step one revolution in the other direction:
+     // one revolution in the other direction:
     Serial.println("counterclockwise");
     myStepper.setSpeed(sspeed/2);
     myStepper.step(-30);
@@ -110,7 +111,7 @@ void loop()
   ds.reset_search();
   for(n=0;n<2;n++)
   {
-      if ( !ds.search(addr)) 
+      if ( !ds.search(addr))  // search for next thermometer
       {
         continue;
       }
@@ -155,7 +156,7 @@ void loop()
   Serial.print("Light0: COMMAND=");
   // Setup device
   Wire.beginTransmission(light0); 
-  Wire.send(0x00);            // sends light0
+  Wire.send(0x00);            // command register
   Wire.send(0b11000001);      // setup (eye light sensing; measurement range 2 [4000 lx])
   Wire.endTransmission();     // stop transmitting
 
@@ -202,7 +203,7 @@ void loop()
   Serial.print("Light1: COMMAND=");
   // Setup device
   Wire.beginTransmission(light1); 
-  Wire.send(0x00);            // sends light0
+  Wire.send(0x00);            // command register
   Wire.send(0b11000001);      // setup (eye light sensing; measurement range 2 [4000 lx])
   Wire.endTransmission();     // stop transmitting
 
