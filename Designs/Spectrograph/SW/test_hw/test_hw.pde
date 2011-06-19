@@ -40,27 +40,12 @@ void setup()
   Serial.begin(9600);
   
   Wire.begin(); // join i2c bus (light0 optional for master)
-
-  // search for DS
-  if ( !ds.search(addr)) 
-  {
-    ds.reset_search();
-    delay(250);
-    return;
-  }
-
-  if ( OneWire::crc8( addr, 7) != addr[7]) 
-  {
-      Serial.print("CRC is not valid!\n");
-      return;
-  }
-
 }
 
 
 void loop() 
 {
-  byte i;
+  byte i,n;
   byte present = 0;
   byte data[12];
   byte inByte;
@@ -74,6 +59,7 @@ void loop()
   delay(300);
   digitalWrite(LAMP1, LOW); // blik
 
+  //--------------------------------------------------------- Serial Input
   // if we get a valid byte
   if (Serial.available() > 0) 
   {
@@ -120,33 +106,52 @@ void loop()
   sense=!sense;
   digitalWrite(LAMP2, LOW); // blik
 
-  //--------------------------------------------------------- 1-Wire bus
- 
-  ds.reset();
-  ds.select(addr);
-  ds.write(0x44,1);         // start conversion
+  //--------------------------------------------------------- 1-Wire bus 
+  ds.reset_search();
+  for(n=0;n<2;n++)
+  {
+      if ( !ds.search(addr)) 
+      {
+        continue;
+      }
 
-  // Delay for measurement, maybe 750ms is enough, maybe not 
-  delay(800);
-  digitalWrite(FW1, LOW); // blik
-
-  present = ds.reset();
-  ds.select(addr);    
-  ds.write(0xBE);         // Read Scratchpad
-
-  Serial.print("P=");
-  Serial.print(present,HEX);
-  Serial.print(" ");
-  for ( i = 0; i < 9; i++) // we need 9 bytes
-  {           
-    data[i] = ds.read();
-    Serial.print(data[i], HEX);
-    Serial.print(" ");
+      Serial.print("R=");
+      for( i = 0; i < 8; i++) 
+      {
+        Serial.print(addr[i], HEX);
+        Serial.print(" ");
+      }
+    
+      if ( OneWire::crc8( addr, 7) != addr[7]) 
+      {
+          Serial.print("CRC is not valid!\n");
+      }
+      
+      ds.reset();
+      ds.select(addr);
+      ds.write(0x44,1);         // start conversion, with parasite power on at the end
+      
+      delay(800);     // maybe 750ms is enough, maybe not
+      digitalWrite(FW1, LOW); // blik
+      
+      present = ds.reset();
+      ds.select(addr);    
+      ds.write(0xBE);         // Read Scratchpad
+    
+      Serial.print("P=");
+      Serial.print(present,HEX);
+      Serial.print(" ");
+      for ( i = 0; i < 9; i++) {           // we need 9 bytes
+        data[i] = ds.read();
+        Serial.print(data[i], HEX);
+        Serial.print(" ");
+      }
+      Serial.print(" CRC=");
+      Serial.print( OneWire::crc8( data, 8), HEX);
+      Serial.println();
   }
-  Serial.print(" CRC=");
-  Serial.print( OneWire::crc8( data, 8), HEX);
-  Serial.println();            
 
+  //------------------------------------------------------- Light 0
   Serial.print("Light0: COMMAND=");
   // Setup device
   Wire.beginTransmission(light0); 
@@ -193,6 +198,7 @@ void loop()
   Wire.endTransmission();     // stop transmitting
   Serial.println(dd, HEX);
 
+  //------------------------------------------------------- Light 1
   Serial.print("Light1: COMMAND=");
   // Setup device
   Wire.beginTransmission(light1); 
@@ -239,7 +245,7 @@ void loop()
   Wire.endTransmission();     // stop transmitting
   Serial.println(dd, HEX);
 
-  // Accelerometer
+  //-------------------------------------------------- Accelerometer
   Serial.print("X=");
   Serial.print(analogRead(A0)-512, DEC);
   Serial.print(" Y=");
