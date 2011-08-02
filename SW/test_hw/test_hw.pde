@@ -11,8 +11,8 @@
 #define FW2    8  // FilterWheel 1
 #define FW3    3  // FilterWheel 1
 
-const int steps = 200; //3200;  // change this to fit the number of steps
-const int sspeed = 100; // stepper motor speed
+const int steps = 3500; //3200;  // change this to fit the number of steps
+const int sspeed = 15; // stepper motor speed
 
 // initialize the stepper library on pins 
 #define M1  9
@@ -76,12 +76,8 @@ void loop()
   {
     // one revolution in one direction
     Serial.println("clockwise");
-    myStepper.setSpeed(sspeed/2);
-    myStepper.step(30);
     myStepper.setSpeed(sspeed);
-    myStepper.step(steps-50);
-    myStepper.setSpeed(sspeed/2);
-    myStepper.step(20);
+    myStepper.step(steps);
     delay(50);
     digitalWrite(M1, LOW);
     digitalWrite(M2, LOW);
@@ -157,7 +153,7 @@ void loop()
   // Setup device
   Wire.beginTransmission(light0); 
   Wire.send(0x00);            // command register
-  Wire.send(0b11000001);      // setup (eye light sensing; measurement range 2 [4000 lx])
+  Wire.send(0b11000000);      // setup (eye light sensing; measurement range 1 [1000 lx])
   Wire.endTransmission();     // stop transmitting
 
   // Delay for measurement, maybe 100ms is enough, maybe not
