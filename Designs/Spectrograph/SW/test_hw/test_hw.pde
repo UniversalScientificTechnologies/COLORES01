@@ -8,8 +8,8 @@
 #define LAMP1 13  // Callibration Lamp 1
 #define LAMP2  6  // Callibration Lamp 2
 #define FW1    7  // FilterWheel 1
-#define FW2    8  // FilterWheel 1
-#define FW3    3  // FilterWheel 1
+#define FW2    8  // FilterWheel 2
+#define FW3    3  // FilterWheel 3
 
 const int steps = 3500; //3200;  // change this to fit the number of steps
 const int sspeed = 15; // stepper motor speed
@@ -54,9 +54,9 @@ void loop()
     
   digitalWrite(LAMP1, HIGH); // All outputs OFF
   digitalWrite(LAMP2, HIGH); 
-  digitalWrite(FW1, HIGH); 
-  digitalWrite(FW2, HIGH); 
-  digitalWrite(FW3, HIGH); 
+  digitalWrite(FW1, LOW); 
+  digitalWrite(FW2, LOW); 
+  digitalWrite(FW3, LOW); 
   delay(300);
   digitalWrite(LAMP1, LOW); // blik
 
@@ -129,7 +129,7 @@ void loop()
       ds.write(0x44,1);         // start conversion, with parasite power on at the end
       
       delay(800);     // maybe 750ms is enough, maybe not
-      digitalWrite(FW1, LOW); // blik
+//      digitalWrite(FW1, LOW); // blik
       
       present = ds.reset();
       ds.select(addr);    
@@ -158,7 +158,7 @@ void loop()
 
   // Delay for measurement, maybe 100ms is enough, maybe not
   delay(110); 
-  digitalWrite(FW2, LOW); // blik
+//  digitalWrite(FW2, LOW); // blik
 
   //  Connect to device and set register light0
   Wire.beginTransmission(light0); 
@@ -205,7 +205,7 @@ void loop()
 
   // Delay for measurement, maybe 100ms is enough, maybe not
   delay(110); 
-  digitalWrite(FW3, LOW); // blik
+//  digitalWrite(FW3, LOW); // blik
 
   //  Connect to device and set register light0
   Wire.beginTransmission(light1); 
