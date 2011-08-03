@@ -12,16 +12,16 @@ int lights[] = {light0, light1};
 
 int lamps[] = {LAMP1, LAMP2};
 
-#define FW1    7  // FilterWheel 1
-#define FW2    8  // FilterWheel 1
-#define FW3    3  // FilterWheel 1
+#define FW1    7  // [PD7 - red]    Slit Wheel 1-st from light 
+#define FW2    8  // [PB0 - yellow] Grism Wheel 2-nd from light
+#define FW3    3  // [PD3 - blue]   Filter Wheel 3-rd from light
 
 int filters[] = {FW1, FW2, FW3};
 
 int motors[] = {-1, 1};
 
-const int steps = 200; //3200;  // change this to fit the number of steps
-const int sspeed = 100; // stepper motor speed
+const int steps = 3500;  // change this to fit the number of steps
+const int sspeed = 10;   // max. 15  // stepper motor speed
 
 // initialize the stepper library on pins 
 #define M1  9
@@ -77,13 +77,10 @@ void setup()
 
 void motor (int arg)
 {
-  myStepper.setSpeed(sspeed/2);
-  myStepper.step(arg * 30);
+  myStepper.setSpeed(1);
+  myStepper.step(arg * 10);
   myStepper.setSpeed(sspeed);
-  myStepper.step(arg * (steps-50));
-  myStepper.setSpeed(sspeed/2);
-  myStepper.step(arg * 20);
-  delay(50);
+  myStepper.step(arg * steps);
   digitalWrite(M1, LOW);
   digitalWrite(M2, LOW);
   digitalWrite(M3, LOW);
@@ -170,14 +167,15 @@ void accelerometer ()
 
 void readSerialString () 
 {
-  if(Serial.available()) 
+  serInIndx=0;
+  do
   {
-    while (Serial.available())
-    {
-      serInString[serInIndx] = Serial.read();
-      serInIndx++;
-    }
-  }
+    while(Serial.available()==0);
+    serInString[serInIndx] = Serial.read();
+    Serial.print(serInString[serInIndx]);
+    serInIndx++;
+  } while ((serInString[serInIndx-1]!='\n')&&(serInString[serInIndx-1]!='.'));
+  Serial.print("\r\n=");
 }
 
 void loop() 
@@ -194,8 +192,8 @@ void loop()
         Serial.println ("Device queries:");
         Serial.println (" l[0,1] light in luxes");
         Serial.println (" t[0,1] temperature in Celsius degrees");
-        Serial.println (" F[0,1][0|1] switch filter wheel on (1) or off (0)");
-        Serial.println (" F[0,1]? check state of filter wheel");
+        Serial.println (" F[0,1,2][0|1|?] switch filter wheel on (1) or off (0)");
+        Serial.println (" F[0,1,2]? check state of filter wheel");
         Serial.println (" L[0,1][0|1] switch calibration lamp on (1) or off (0)");
         Serial.println (" L[0,1]? check state of calibration lamp");
         Serial.println (" M[0|1] motor rotation clockwise (1) or counterclockwise (0)");
@@ -234,8 +232,6 @@ void loop()
     }
     for (serInIndx = 100; serInIndx > 0; serInIndx--)
       serInString[serInIndx] = ' ';
-    
-    Serial.flush ();
   }
   
   delay(100);
