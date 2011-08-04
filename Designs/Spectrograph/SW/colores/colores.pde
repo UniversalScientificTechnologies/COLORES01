@@ -230,43 +230,33 @@ void loop()
     {
       case 'i':	// inicializace
         inicializace ();
-	telemetrie ();
         break;
       case 'm':
         motor (-1);
-        telemetrie ();
         break;
       case 'M':
         motor (1); // vysunuto
-        telemetrie ();
         break;
       case 'A':
         digitalWrite(FW1, HIGH);
-        telemetrie ();
         break;
       case 'a':
         digitalWrite(FW1, LOW);
-        telemetrie ();
         break;
       case 'B':
         digitalWrite(FW2, HIGH);
-        telemetrie ();
         break;
       case 'b':
         digitalWrite(FW2, LOW);
-        telemetrie ();
         break;
       case 'C':
         digitalWrite(FW3, HIGH);
-        telemetrie ();
         break;
       case 'c':
         digitalWrite(FW3, LOW);
-        telemetrie ();
-        break;
-      default:
         break;
     }
+    telemetrie ();
     Serial.flush ();
     // /for (serInIndx = 100; serInIndx > 0; serInIndx--)
     //  serInString[serInIndx] = ' ';
