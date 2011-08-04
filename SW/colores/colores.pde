@@ -27,10 +27,9 @@ i - inicializace: vypni vsechny FW, vytahni motor
 
 int lights[] = {light0, light1};
 
-#define LAMP1 13  // Callibration Lamp 1
-#define LAMP2  6  // Callibration Lamp 2
+//#define LAMP1 13  // Callibration Lamp 1
+//#define LAMP2  6  // Callibration Lamp 2
 
-int lamps[] = {LAMP1, LAMP2};
 
 #define FW1    7  // [PD7 - red]    Slit Wheel 1-st from light 
 #define FW2    8  // [PB0 - yellow] Grism Wheel 2-nd from light
@@ -38,30 +37,107 @@ int lamps[] = {LAMP1, LAMP2};
 
 int filters[] = {FW1, FW2, FW3};
 
-const int steps = 3500;  // change this to fit the number of steps
-const int sspeed = 10;   // max. 15  // stepper motor speed
+const int STEPS = 3500;  // change this to fit the number of steps
+const int SSPEED = 8000;   // max. 15  // stepper motor speed
 
 // initialize the stepper library on pins 
 #define M1  9
 #define M2  10
 #define M3  11
 #define M4  12
-Stepper myStepper(steps, M1,M2,M3,M4);           
+Stepper myStepper(200, M1,M2,M3,M4);           
 
 // DS18S20 Temperature chip 
 OneWire  ds(5);  // 1-Wire pin
 byte addr[2][8];    // 2x 1-Wire Address
 
+char deleni16[16]={'0','1','1','2','3','3','4','4','5','6','6','7','7','8','9','9'};
+
 char serInString[100];                        
 int serInIndx = 0;
 int in1, in2;
 
-void motor (int arg)
+void motor (word arg)
 {
+  word n;
+  word s=SSPEED;
+  
+/*
+  for(n=0;n<2500000/SSPEED;n++)
+  {
+    digitalWrite(M1, LOW);  
+    digitalWrite(M2, HIGH);
+    digitalWrite(M1, LOW);  
+    digitalWrite(M2, HIGH);
+    delayMicroseconds(SSPEED);
+    digitalWrite(M1, HIGH);  
+    digitalWrite(M2, LOW);
+    digitalWrite(M1, HIGH);  
+    digitalWrite(M2, LOW);
+    delayMicroseconds(SSPEED);
+  }
+*/
+
+  if(arg==-1)
+  { 
+    for(n=0;n<STEPS/4;n++)
+    {
+      digitalWrite(M1, LOW);  
+      digitalWrite(M2, HIGH);
+//      digitalWrite(M3, LOW);
+//      digitalWrite(M4, HIGH); 
+      delayMicroseconds(s);
+//      digitalWrite(M1, LOW);
+//      digitalWrite(M2, HIGH);
+      digitalWrite(M3, HIGH);   
+      digitalWrite(M4, LOW); 
+      delayMicroseconds(s);
+      digitalWrite(M1, HIGH);  
+      digitalWrite(M2, LOW);
+//      digitalWrite(M3, HIGH);
+//      digitalWrite(M4, LOW); 
+      delayMicroseconds(s);
+//      digitalWrite(M1, HIGH);  
+//      digitalWrite(M2, LOW);
+      digitalWrite(M3, LOW);  
+      digitalWrite(M4, HIGH); 
+      delayMicroseconds(s);
+      if(s>1500)s-=16;
+    }
+  }
+  else
+  {
+    for(n=0;n<STEPS/4;n++)
+    {
+//      digitalWrite(M1, HIGH);  
+//      digitalWrite(M2, LOW);
+      digitalWrite(M3, LOW);  
+      digitalWrite(M4, HIGH); 
+      delayMicroseconds(s);
+      digitalWrite(M1, HIGH);  
+      digitalWrite(M2, LOW);
+//      digitalWrite(M3, HIGH);
+//      digitalWrite(M4, LOW); 
+      delayMicroseconds(s);
+//      digitalWrite(M1, LOW);
+//      digitalWrite(M2, HIGH);
+      digitalWrite(M3, HIGH);  
+      digitalWrite(M4, LOW); 
+      delayMicroseconds(s);
+      digitalWrite(M1, LOW);  
+      digitalWrite(M2, HIGH);
+//      digitalWrite(M3, LOW);
+//      digitalWrite(M4, HIGH); 
+      delayMicroseconds(s);
+      if(s>1500)s-=16;
+    }
+  }
+/*  
   myStepper.setSpeed(1);
   myStepper.step(arg * 10);
   myStepper.setSpeed(sspeed);
   myStepper.step(arg * steps);
+*/  
   digitalWrite(M1, LOW);
   digitalWrite(M2, LOW);
   digitalWrite(M3, LOW);
@@ -157,7 +233,8 @@ void setup()
   pinMode(FW3, OUTPUT); 
 
 pinMode(6, OUTPUT); 
-analogWrite(6, 250);
+//analogWrite(6, 254);
+digitalWrite(6, HIGH);  
     
   // initialize the serial port:
   Serial.begin(9600);
@@ -186,6 +263,7 @@ analogWrite(6, 250);
 
 void telemetrie ()
 {
+  int t;
   Serial.print ("FW1=");
   Serial.print (digitalRead (filters[0]) ? '1' : '0');
   Serial.print (",FW2=");
@@ -193,13 +271,15 @@ void telemetrie ()
   Serial.print (",FW3=");
   Serial.print (digitalRead (filters[2]) ? '1' : '0');
   Serial.print (",T1=");
-  Serial.print (temperature (0) >> 4);
+  t=temperature(0);
+  Serial.print (t >> 4);
   Serial.print (".");
-  Serial.print (temperature (0) % 16);
+  Serial.print (deleni16[t & 0xf]);
   Serial.print (",T2=");
-  Serial.print (temperature (1) >> 4);
+  t=temperature(1);
+  Serial.print (t >> 4);
   Serial.print (".");
-  Serial.print (temperature (1) % 16);
+  Serial.print (deleni16[t & 0xf]);
   Serial.print (",L1=");
   Serial.print (light (0));
   Serial.print (",L2=");
@@ -237,6 +317,16 @@ void loop()
       case 'M':
         motor (1); // vysunuto
         break;
+
+      case 'x':
+  myStepper.setSpeed(100);
+  myStepper.step(3000);
+        break;
+      case 'y':
+  myStepper.setSpeed(10.0);
+  myStepper.step(-3000);
+        break;
+
       case 'A':
         digitalWrite(FW1, HIGH);
         break;
