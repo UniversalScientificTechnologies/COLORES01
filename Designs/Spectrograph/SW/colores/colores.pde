@@ -102,7 +102,7 @@ void motor (word arg)
       digitalWrite(M3, LOW);  
       digitalWrite(M4, HIGH); 
       delayMicroseconds(s);
-      if(s>1500)s-=16;
+      if(s>1500)s-=50;
     }
   }
   else
@@ -129,7 +129,7 @@ void motor (word arg)
 //      digitalWrite(M3, LOW);
 //      digitalWrite(M4, HIGH); 
       delayMicroseconds(s);
-      if(s>1500)s-=16;
+      if(s>1500)s-=50;
     }
   }
 /*  
