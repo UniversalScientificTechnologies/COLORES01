@@ -2,6 +2,26 @@
 #include <Stepper.h>
 #include <Wire.h>
 
+/*
+
+protokol:
+
+M - motor na jednu stranu
+m - motor na druhou stranu
+--
+a - vypni FW1
+A - zapni FW1
+--
+b - vypni FW2
+B - zapni FW2
+--
+c - vypni FW3
+C - zapni FW3
+--
+i - inicializace: vypni vsechny FW, vytahni motor
+
+*/
+
 #define light0 0x44 // A0 = L (I2C light0)
 #define light1 0x45 // A0 = H (I2C light1)
 
@@ -17,8 +37,6 @@ int lamps[] = {LAMP1, LAMP2};
 #define FW3    3  // [PD3 - blue]   Filter Wheel 3-rd from light
 
 int filters[] = {FW1, FW2, FW3};
-
-int motors[] = {-1, 1};
 
 const int steps = 3500;  // change this to fit the number of steps
 const int sspeed = 10;   // max. 15  // stepper motor speed
@@ -37,43 +55,6 @@ byte addr[2][8];    // 2x 1-Wire Address
 char serInString[100];                        
 int serInIndx = 0;
 int in1, in2;
-
-void setup() 
-{
-  pinMode(LAMP1, OUTPUT); 
-  pinMode(LAMP2, OUTPUT); 
-  pinMode(FW1, OUTPUT); 
-  pinMode(FW2, OUTPUT); 
-  pinMode(FW3, OUTPUT); 
-  
-  digitalWrite(LAMP1, HIGH); // All outputs OFF
-  digitalWrite(LAMP2, HIGH); 
-  digitalWrite(FW1, HIGH); 
-  digitalWrite(FW2, HIGH); 
-  digitalWrite(FW3, HIGH); 
-
-  // initialize the serial port:
-  Serial.begin(9600);
-  
-  Wire.begin(); // join i2c bus 
-  
-  // OneWire 
-  ds.reset_search();
-  if (!ds.search(addr[0]))  // search for next thermometer
-  {
-    Serial.print ("1st thermometer error.");
-    ds.reset_search();
-    delay(250);
-    return;
-  }
-  if (!ds.search(addr[1]))  // search for next thermometer
-  {
-    Serial.print ("2nd thermometer error.");
-    ds.reset_search();
-    delay(250);
-    return;
-  }
-}
 
 void motor (int arg)
 {
@@ -125,7 +106,7 @@ int light (int arg)
 
 int temperature (int arg)
 {
-  int i, Temp;
+  int i, temp;
   byte data[12];
   
   if (OneWire::crc8 (addr[arg], 7) != addr[arg][7]) 
@@ -149,20 +130,81 @@ int temperature (int arg)
     data[i] = ds.read();
   }
       
-  Temp = (data[1] << 8) + data[0];   //take the two bytes from the response relating to temperature
-  Temp = Temp >> 4;  //divide by 16 to get pure celcius readout
-
-  return Temp;
+  temp = (data[1] << 8) + data[0];   //take the two bytes from the response relating to temperature
+  // temp = temp >> 4;  //divide by 16 to get pure celcius readout
+  
+  return temp;
 }
 
-void accelerometer ()
+void inicializace ()
 {
-  Serial.print("X=");
-  Serial.print(analogRead(A0)-512, DEC);
-  Serial.print(" Y=");
-  Serial.print(analogRead(A1)-512, DEC);
-  Serial.print(" Z=");
-  Serial.println(analogRead(A2)-512, DEC);
+  // vysune se motor
+  motor (1);
+  // vsechny vystupy off
+  // digitalWrite(LAMP1, LOW); 
+  // digitalWrite(LAMP2, LOW); 
+  digitalWrite(FW1, LOW); 
+  digitalWrite(FW2, LOW); 
+  digitalWrite(FW3, LOW);  
+}
+
+void setup() 
+{
+  // pinMode(LAMP1, OUTPUT); 
+  // pinMode(LAMP2, OUTPUT); 
+  pinMode(FW1, OUTPUT); 
+  pinMode(FW2, OUTPUT); 
+  pinMode(FW3, OUTPUT); 
+
+pinMode(6, OUTPUT); 
+analogWrite(6, 250);
+    
+  // initialize the serial port:
+  Serial.begin(9600);
+  
+  Wire.begin(); // join i2c bus 
+  
+  // OneWire 
+  ds.reset_search();
+  if (!ds.search(addr[0]))  // search for next thermometer
+  {
+    Serial.print ("1st thermometer error.");
+    ds.reset_search();
+    delay(250);
+    return;
+  }
+  if (!ds.search(addr[1]))  // search for next thermometer
+  {
+    Serial.print ("2nd thermometer error.");
+    ds.reset_search();
+    delay(250);
+    return;
+  }
+  
+  inicializace ();
+}
+
+void telemetrie ()
+{
+  Serial.print ("FW1=");
+  Serial.print (digitalRead (filters[0]) ? '1' : '0');
+  Serial.print (",FW2=");
+  Serial.print (digitalRead (filters[1]) ? '1' : '0');
+  Serial.print (",FW3=");
+  Serial.print (digitalRead (filters[2]) ? '1' : '0');
+  Serial.print (",T1=");
+  Serial.print (temperature (0) >> 4);
+  Serial.print (".");
+  Serial.print (temperature (0) % 16);
+  Serial.print (",T2=");
+  Serial.print (temperature (1) >> 4);
+  Serial.print (".");
+  Serial.print (temperature (1) % 16);
+  Serial.print (",L1=");
+  Serial.print (light (0));
+  Serial.print (",L2=");
+  Serial.print (light (1));
+  Serial.println ();
 }
 
 void readSerialString () 
@@ -180,62 +222,55 @@ void readSerialString ()
 
 void loop() 
 { 
-  readSerialString();
+  // readSerialString();
   
-  if( serInIndx > 0)
-  {   
-    in1 = serInString[1] - '0'; 
-     
-    switch (serInString[0])
+  if (Serial.available())
+  {     
+    switch (Serial.read())
     {
-      case '?':
-        Serial.println ("Device queries:");
-        Serial.println (" l[0,1] light in luxes");
-        Serial.println (" t[0,1] temperature in Celsius degrees");
-        Serial.println (" F[0,1,2][0|1|?] switch filter wheel on (1) or off (0)");
-        Serial.println (" F[0,1,2]? check state of filter wheel");
-        Serial.println (" L[0,1][0|1] switch calibration lamp on (1) or off (0)");
-        Serial.println (" L[0,1]? check state of calibration lamp");
-        Serial.println (" M[0|1] motor rotation clockwise (1) or counterclockwise (0)");
+      case 'i':	// inicializace
+        inicializace ();
+	telemetrie ();
         break;
-      case 't':
-        Serial.println (temperature (in1));
-        break;
-      case 'l':
-        Serial.println (light (in1));
-        break;
-      case 'L':
-        if (serInString[2] == '?')
-        {
-          Serial.println (digitalRead (lamps[in1]) ? '0' : '1'); 
-        }
-        else
-        {
-          in2 = serInString[2] - '0'; 
-          digitalWrite(lamps[in1], in2 ? LOW : HIGH);
-        }
-        break;
-      case 'F':
-        if (serInString[2] == '?')
-        {
-          Serial.println (digitalRead (filters[in1]) ? '0' : '1'); 
-        }
-        else
-        {
-          in2 = serInString[2] - '0'; 
-          digitalWrite(filters[in1], in2 ? LOW : HIGH);
-        }
+      case 'm':
+        motor (-1);
+        telemetrie ();
         break;
       case 'M':
-        motor (motors[in1]);
+        motor (1); // vysunuto
+        telemetrie ();
+        break;
+      case 'A':
+        digitalWrite(FW1, HIGH);
+        telemetrie ();
+        break;
+      case 'a':
+        digitalWrite(FW1, LOW);
+        telemetrie ();
+        break;
+      case 'B':
+        digitalWrite(FW2, HIGH);
+        telemetrie ();
+        break;
+      case 'b':
+        digitalWrite(FW2, LOW);
+        telemetrie ();
+        break;
+      case 'C':
+        digitalWrite(FW3, HIGH);
+        telemetrie ();
+        break;
+      case 'c':
+        digitalWrite(FW3, LOW);
+        telemetrie ();
+        break;
+      default:
         break;
     }
-    for (serInIndx = 100; serInIndx > 0; serInIndx--)
-      serInString[serInIndx] = ' ';
+    Serial.flush ();
+    // /for (serInIndx = 100; serInIndx > 0; serInIndx--)
+    //  serInString[serInIndx] = ' ';
   }
   
-  delay(100);
+  // delay(100);
 }
-
-
-
