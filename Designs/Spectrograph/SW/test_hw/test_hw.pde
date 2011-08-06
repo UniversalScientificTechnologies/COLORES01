@@ -37,6 +37,9 @@ void setup()
   pinMode(FW2, OUTPUT); 
   pinMode(FW3, OUTPUT); 
 
+  pinMode(6, OUTPUT); 
+  analogWrite(6, 128);
+
   // initialize the serial port:
   Serial.begin(9600);
   
@@ -46,6 +49,9 @@ void setup()
 
 void loop() 
 {
+  
+  while(TRUE);
+  
   byte i,n; // for fors
   byte present = 0; // for 1-Wire
   byte data[12]; // data from temperature
@@ -54,9 +60,9 @@ void loop()
     
   digitalWrite(LAMP1, HIGH); // All outputs OFF
   digitalWrite(LAMP2, HIGH); 
-  digitalWrite(FW1, LOW); 
-  digitalWrite(FW2, LOW); 
-  digitalWrite(FW3, LOW); 
+  digitalWrite(FW1, HIGH); 
+  digitalWrite(FW2, HIGH); 
+  digitalWrite(FW3, HIGH); 
   delay(300);
   digitalWrite(LAMP1, LOW); // blik
 
@@ -129,7 +135,7 @@ void loop()
       ds.write(0x44,1);         // start conversion, with parasite power on at the end
       
       delay(800);     // maybe 750ms is enough, maybe not
-//      digitalWrite(FW1, LOW); // blik
+      digitalWrite(FW1, LOW); // blik
       
       present = ds.reset();
       ds.select(addr);    
@@ -158,7 +164,7 @@ void loop()
 
   // Delay for measurement, maybe 100ms is enough, maybe not
   delay(110); 
-//  digitalWrite(FW2, LOW); // blik
+  digitalWrite(FW2, LOW); // blik
 
   //  Connect to device and set register light0
   Wire.beginTransmission(light0); 
@@ -205,7 +211,7 @@ void loop()
 
   // Delay for measurement, maybe 100ms is enough, maybe not
   delay(110); 
-//  digitalWrite(FW3, LOW); // blik
+  digitalWrite(FW3, LOW); // blik
 
   //  Connect to device and set register light0
   Wire.beginTransmission(light1); 
