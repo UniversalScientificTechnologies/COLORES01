@@ -1,4 +1,4 @@
-#include <OneWire.h>
+#include "OneWire.h"
 #include <Stepper.h>
 #include <Wire.h>
 
@@ -150,8 +150,8 @@ int light (int arg)
   
   // Setup device
   Wire.beginTransmission(lights[arg]); 
-  Wire.send(0x00);            // command register
-  Wire.send(0b11000001);      // setup (eye light sensing; measurement range 2 [4000 lx])
+  Wire.write(byte(0x00));            // command register
+  Wire.write(byte(0b11000001));      // setup (eye light sensing; measurement range 2 [4000 lx])
   Wire.endTransmission();     // stop transmitting
 
   // Delay for measurement, maybe 100ms is enough, maybe not
@@ -159,22 +159,22 @@ int light (int arg)
 
   // LSB
   Wire.beginTransmission(lights[arg]); 
-  Wire.send(0x01);            // sends light0
+  Wire.write(byte(0x01));            // sends light0
   Wire.endTransmission();     // stop transmitting
   //  Connect to device and request one byte
   Wire.beginTransmission(lights[arg]);
   Wire.requestFrom(lights[arg], 1);
-  LSB = Wire.receive();
+  LSB = Wire.read();
   Wire.endTransmission();
   
   // MSB
   Wire.beginTransmission(lights[arg]);
-  Wire.send(0x02);            // sends light0
+  Wire.write(byte(0x02));            // sends light0
   Wire.endTransmission();     // stop transmitting
   //  Connect to device and request one byte
   Wire.beginTransmission(lights[arg]);
   Wire.requestFrom(lights[arg], 1);
-  MSB = Wire.receive();
+  MSB = Wire.read();
   Wire.endTransmission();     // stop transmitting
   
   return ((MSB << 8) + LSB);  
