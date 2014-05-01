@@ -1,7 +1,10 @@
 // Lamps controller
 
+#include <OneWire.h>
+
 #define LAG 400 // dellay in ms between lamp relay switching
 
+// Triacs
 int t1 = 2;  // PD2 - trafo for gas lamps
 int t2 = 3;  // PD3 - relay for switching between lamps
 int t3 = 4;  // PD4 - halogen lamp
@@ -11,9 +14,46 @@ int t6 = 7;  // PD7
 int t7 = 8;  // PB0
 int t8 = 9;  // PB1
 
-int n;
+// DS18S20 Temperature chip 
+OneWire  ds(12);  // PB4 1-Wire pin (needs pull-up to Vcc)
+byte addr[8];   // Thermometer address
 
-char state;
+int n;       // Counter
+char state;  // State of Gas Lamps
+
+char deleni16[16]={'0','1','1','2','3','3','4','4','5','6','6','7','7','8','9','9'};
+
+int temperature ()
+{
+  int i, temp;
+  byte data[12];
+  
+  if (OneWire::crc8 (addr, 7) != addr[7]) 
+  {
+    Serial.print("CRC is not valid!\n");
+    return 0;
+  }
+      
+  ds.reset();
+  ds.select(addr);
+  ds.write(0x44, 1);         // start conversion, with parasite power on at the end
+      
+  delay(800);     // maybe 750ms is enough, maybe not
+  
+  ds.reset();
+  ds.select(addr);    
+  ds.write(0xBE);         // Read Scratchpad
+    
+  for ( i = 0; i < 9; i++)   // we need 9 bytes
+  {           
+    data[i] = ds.read();
+  }
+      
+  temp = (data[1] << 8) + data[0];   //take the two bytes from the response relating to temperature
+  // temp = temp >> 4;  //divide by 16 to get pure celcius readout
+  
+  return temp;
+}
 
 // the setup routine runs once when you press reset:
 void setup() 
@@ -39,12 +79,27 @@ void setup()
   
   // initialize the serial port
   Serial.begin(9600);  
+  Serial.println();
+  Serial.println("Cvak.");
+  
+  // OneWire init
+  ds.reset_search();
+  if (!ds.search(addr))  // search for next thermometer
+  {
+    Serial.println("Thermometer error.");
+    ds.reset_search();
+    delay(250);
+    return;
+  }
+  
+  Serial.println("Hmmm....");
 }
 
 // the loop routine runs over and over again forever:
 void loop() 
 {
-  byte inByte;
+  byte inByte;  // Character from serial line
+  int t;        // Temperature
   
   if (Serial.available() > 0) // wait for a char
   {
@@ -62,7 +117,6 @@ void loop()
           digitalWrite(t2, LOW);  
           delay(LAG);
           digitalWrite(t1, LOW); 
-          delay(LAG);
           state = 'A';
         }
         break;
@@ -75,7 +129,6 @@ void loop()
           digitalWrite(t2, HIGH);  
           delay(LAG);
           digitalWrite(t1, LOW); 
-          delay(LAG);
           state = 'B';
         }
         break;
@@ -84,7 +137,6 @@ void loop()
         digitalWrite(t1, HIGH); 
         delay(LAG);
         digitalWrite(t2, HIGH);  
-        delay(LAG);
         state = 'a';
         break;
 
@@ -92,7 +144,6 @@ void loop()
         digitalWrite(t1, HIGH); 
         delay(LAG);
         digitalWrite(t2, HIGH);  
-        delay(LAG);
         state = 'b';
         break;
     }
@@ -107,13 +158,23 @@ void loop()
       digitalWrite(inByte-'A'+2, LOW);
     }
     
-    
-    for (n=1;n<=8;n++)    // Send status to serial line
+    // Send status to serial line    
+    t=temperature();                // Read temperature
+    Serial.print (t >> 4);
+    Serial.print (".");
+    Serial.print (deleni16[t & 0xf]);
+    Serial.print (' ');
+    for (n=1;n<=8;n++)    
     {
-      Serial.print('t');
+      if(digitalRead(n+1))
+      {
+        Serial.print('t');
+      }
+      else
+      {
+        Serial.print('T');
+      }
       Serial.print(n, DEC);
-      Serial.print('=');
-      Serial.print((~digitalRead(n+1))&1, DEC);
       Serial.print(' ');      
     }
     Serial.println();
