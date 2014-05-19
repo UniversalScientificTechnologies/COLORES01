@@ -1,6 +1,10 @@
 // Lamps controller
+#define VERSION  "$Revision$" 
+
 
 #include <OneWire.h>
+#include <EEPROM.h>
+
 
 #define LAG 400 // dellay in ms between lamp relay switching
 
@@ -9,7 +13,7 @@ int t1 = 2;  // PD2 - trafo for gas lamps
 int t2 = 3;  // PD3 - relay for switching between lamps
 int t3 = 4;  // PD4 - halogen lamp
 int t4 = 5;  // PD5 - focuser
-int t5 = 6;  // PD6
+int t5 = 6;  // PD6 - COLORES
 int t6 = 7;  // PD7
 int t7 = 8;  // PB0
 int t8 = 9;  // PB1
@@ -23,7 +27,14 @@ char state;  // State of Gas Lamps
 
 char deleni16[16]={'0','1','1','2','3','3','4','4','5','6','6','7','7','8','9','9'};
 
-int temperature ()
+void info ()  // Print an information string
+{
+  Serial.print("Lamps Controller ");
+  Serial.println(VERSION);
+  Serial.println("Commands: abcdefghABCDEFGHiS");
+}
+
+int temperature ()  // Read temperature from Dallas
 {
   int i, temp;
   byte data[12];
@@ -54,6 +65,32 @@ int temperature ()
   
   return temp;
 }
+
+void pstatus()   // Print status to serial line 
+{     
+  int t;        // Temperature
+
+  t=temperature();                // Read temperature
+  Serial.print (t >> 4);
+  Serial.print (".");
+  Serial.print (deleni16[t & 0xf]);
+  Serial.print (' ');
+  for (n=1;n<=8;n++)    
+  {
+    if(digitalRead(n+1))
+    {
+      Serial.print('t');
+    }
+    else
+    {
+      Serial.print('T');
+    }
+    Serial.print(n, DEC);
+    Serial.print(' ');      
+  }
+  Serial.println();
+}
+
 
 // the setup routine runs once when you press reset:
 void setup() 
@@ -92,14 +129,20 @@ void setup()
     return;
   }
   
+  for (n=1;n<=8;n++)    
+  {
+    digitalWrite(n+1,EEPROM.read(n));  // Read saved states from EEPROM
+  }
+
   Serial.println("Hmmm....");
+  info();
+  pstatus();
 }
 
 // the loop routine runs over and over again forever:
 void loop() 
 {
   byte inByte;  // Character from serial line
-  int t;        // Temperature
   
   if (Serial.available() > 0) // wait for a char
   {
@@ -146,6 +189,17 @@ void loop()
         digitalWrite(t2, HIGH);  
         state = 'b';
         break;
+
+      case 'i':  // Print Info
+        info();
+        break;
+
+      case 'S':  // Save states to EEPROM
+        for (n=1;n<=8;n++)    
+        {
+          EEPROM.write(n,digitalRead(n+1));
+        }
+        break;
     }
     
     if ( (inByte >= 'c') and (inByte <= 'h'))  // Switch OFF other triacs
@@ -158,26 +212,6 @@ void loop()
       digitalWrite(inByte-'A'+2, LOW);
     }
     
-    // Send status to serial line    
-    t=temperature();                // Read temperature
-    Serial.print (t >> 4);
-    Serial.print (".");
-    Serial.print (deleni16[t & 0xf]);
-    Serial.print (' ');
-    for (n=1;n<=8;n++)    
-    {
-      if(digitalRead(n+1))
-      {
-        Serial.print('t');
-      }
-      else
-      {
-        Serial.print('T');
-      }
-      Serial.print(n, DEC);
-      Serial.print(' ');      
-    }
-    Serial.println();
-    
+    pstatus(); // Print states    
   }
 }
