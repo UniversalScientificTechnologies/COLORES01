@@ -31,7 +31,12 @@ void info ()  // Print an information string
 {
   Serial.print("Lamps Controller ");
   Serial.println(VERSION);
-  Serial.println("Commands: abcdefghABCDEFGHiS");
+  Serial.println("Commands: abcdefghABCDEFGHiRS");
+  Serial.println("t1=a t2=b ... t8=h");
+  Serial.println("a = ON t1 / A = OFF t1");
+  Serial.println("i = info");
+  Serial.println("R = reset");
+  Serial.println("S = store to EEPROM");
 }
 
 int temperature ()  // Read temperature from Dallas
@@ -79,14 +84,24 @@ void pstatus()   // Print status to serial line
   {
     if(digitalRead(n+1))
     {
-      Serial.print('t');
+      Serial.print((char)('a'+n-1));
     }
     else
     {
-      Serial.print('T');
+      Serial.print((char)('A'+n-1));
     }
-    Serial.print(n, DEC);
-    Serial.print(' ');      
+  }
+  Serial.print(' ');      
+  for (n=1;n<=8;n++)    
+  {
+    if(EEPROM.read(n))
+    {
+      Serial.print((char)('a'+n-1));
+    }
+    else
+    {
+      Serial.print((char)('A'+n-1));
+    }
   }
   Serial.println();
 }
@@ -192,6 +207,10 @@ void loop()
 
       case 'i':  // Print Info
         info();
+        break;
+
+      case 'R':  // Reset
+        asm volatile ("  jmp 0");  
         break;
 
       case 'S':  // Save states to EEPROM
