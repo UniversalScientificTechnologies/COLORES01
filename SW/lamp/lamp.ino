@@ -33,7 +33,7 @@ void info ()  // Print an information string
   Serial.println(VERSION);
   Serial.println("Commands: abcdefghABCDEFGHiRS");
   Serial.println("t1=a t2=b ... t8=h");
-  Serial.println("a = ON t1 / A = OFF t1");
+  Serial.println("a = OFF t1 / A = ON t1");
   Serial.println("i = info");
   Serial.println("R = reset");
   Serial.println("S = store to EEPROM");
