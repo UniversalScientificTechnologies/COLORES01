@@ -1,4 +1,4 @@
-#include "OneWire.h"
+#include <OneWire.h>
 #include <Stepper.h>
 #include <Wire.h>
 
@@ -305,7 +305,7 @@ void loop()
   // readSerialString();
   
   if (Serial.available())
-  {     
+  {
     switch (Serial.read())
     {
       case 'i':	// inicializace
