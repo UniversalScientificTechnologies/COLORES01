@@ -8,7 +8,7 @@ import time
 
 #### Script Arguments ###############################################
 
-if len(sys.argv) != 3 :
+if len(sys.argv) < 3 :
     sys.stderr.write("Invalid number of arguments.\n")
     sys.stderr.write("Usage: %s device command\n" % (sys.argv[0], ))
     sys.exit(1)
@@ -16,13 +16,14 @@ if len(sys.argv) != 3 :
 print("setcol: initiating")
 
 try:
-    ser = serial.Serial(sys.argv[1], 9600, timeout=0) 
+    ser = serial.Serial(sys.argv[1])
     time.sleep(2)
     command = sys.argv[2]
-    ser.write(command)
+    for c in command:
+        ser.write(c)
+        print("setcol: sending %s" % c)
+        time.sleep(2)
     ser.close()
-    print("setcol: sending")
-    time.sleep(len(command)*1.5)
     print("setcol: done")
     sys.exit(0)
 
